@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>PlantGo</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script>
+    window.onerror = function(message, source, lineno, colno, error) {
+      const errorDiv = document.createElement('div');
+      errorDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:red;color:white;padding:20px;z-index:9999;font-size:16px;white-space:pre-wrap;';
+      errorDiv.innerHTML = '<strong>⚠️ 發生錯誤 (Error):</strong><br>' + message + '<br><br><strong>位置:</strong> 行 ' + lineno + ', 列 ' + colno;
+      document.body.appendChild(errorDiv);
+      return false;
+    };
+  </script>
+  
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/lucide-react@0.292.0/dist/umd/lucide-react.min.js"></script>
+
+  <style>
+    body { margin: 0; overflow: hidden; background-color: #ecfdf5; touch-action: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    
+    .fade-in { animation: fadeIn 0.3s ease-out; }
+    .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    .slide-down-out { animation: slideDownOut 0.3s ease-in forwards; }
+    .bounce-in { animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+    
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes slideDownOut { from { transform: translateY(0); } to { transform: translateY(100%); } }
+    @keyframes bounceIn { 0% { transform: scale(0.3); opacity: 0; } 70% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
+    
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    .avatar-img { pointer-events: none; user-select: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .pb-safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+    .pt-safe-top { padding-top: env(safe-area-inset-top); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    
+    // --- 安全載入圖標 ---
+    const Icons = window.lucideReact || {};
+    // 從圖標庫解構出需要的圖標，如果沒有載入成功，預設為 undefined
+    const { 
+      Sprout, Camera, Compass, LibraryBig, School, 
+      Loader2, Check, HelpCircle, BookOpen, Trophy, User
+    } = Icons;
+
+    // --- 自定義圖片組件 (處理你的 PNG) ---
+    const ImageIcon = ({ src, size = 24, className = "", alt = "icon" }) => (
+      <img src={src} alt={alt} style={{ width: size, height: size }} className={`object-contain ${className}`} />
+    );
+
+    // --- 設定 ---
+    const MAP_SIZE = 3000;
+    const MOVE_SPEED = 25;
+
+    // --- 模擬資料 ---
+    const INITIAL_BUILDINGS = [
+      { id: '1', name: '靜宜校門', visualIcon: Compass, position: { x: 1500, y: 2850 }, desc: '冒險的入口，見證無數靜宜人的啟航。' },
+      { id: '2', name: '主顧聖母堂', imageSrc: './church_sketch.png', position: { x: 1200, y: 2000 }, desc: '最具指標性的建築，象徵魚與生命。' },
+      { id: '3', name: '蓋夏圖書館', visualIcon: LibraryBig, position: { x: 2300, y: 1200 }, desc: '知識的殿堂，藏書豐富。' },
+      { id: '4', name: '至善樓', visualIcon: School, position: { x: 1800, y: 1500 }, desc: '教學行政中心，周圍綠意盎然。' },
+    ];
+
+    const PLANT_DATABASE = [
+      { id: 'p1', name: '靜宜百合', icon: '🌸' },
+      { id: 'p2', name: '校門古榕', icon: '🌳' },
+      { id: 'p3', name: '相思樹', icon: '🌿' },
+      { id: 'p4', name: '鳳凰木', icon: '🌱' },
+      { id: 'p5', name: '仙人掌園', icon: '🌵' },
+      { id: 'p6', name: '向日葵田', icon: '🌻' },
+    ];
+
+    const INITIAL_PLANTS_ON_MAP = [
+      { ...PLANT_DATABASE[0], position: { x: 1150, y: 2050 }, instanceId: 'i1' },
+      { ...PLANT_DATABASE[1], position: { x: 1580, y: 2780 }, instanceId: 'i2' },
+      ...Array.from({ length: 30 }).map((_, i) => {
+        const basePlant = PLANT_DATABASE[Math.floor(Math.random() * PLANT_DATABASE.length)];
+        return {
+          ...basePlant,
+          instanceId: `rnd-${i}`,
+          position: { x: Math.random() * 2600 + 200, y: Math.random() * 2600 + 200 },
+        };
+      })
+    ];
+
+    // --- 底部面板組件 ---
+    const BottomSheet = ({ isOpen, onClose, title, children, iconSrc }) => {
+      const [isAnimatingOut, setIsAnimatingOut] = useState(false);
+
+      useEffect(() => {
+        if (!isOpen) setIsAnimatingOut(false);
+      }, [isOpen]);
+
+      const handleClose = () => {
+        setIsAnimatingOut(true);
+        setTimeout(() => {
+          onClose();
+          setIsAnimatingOut(false);
+        }, 250);
+      };
+
+      if (!isOpen && !isAnimatingOut) return null;
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-end justify-center">
+          <div className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${isOpen && !isAnimatingOut ? 'opacity-100' : 'opacity-0'}`} onClick={handleClose}></div>
+          <div className={`relative w-full max-w-md bg-[#f0fdf4] rounded-t-[2.5rem] p-6 pb-safe-bottom shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.2)] ${isAnimatingOut ? 'slide-down-out' : 'slide-up'}`} style={{maxHeight: '85vh', display: 'flex', flexDirection: 'column'}}>
+            <div className="flex items-center justify-between mb-6 flex-shrink-0">
+              <div className="flex items-center gap-3 text-emerald-900">
+                <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center shadow-sm">
+                  <ImageIcon src={iconSrc} size={28} />
+                </div>
+                <h2 className="text-2xl font-bold">{title}</h2>
+              </div>
+              <button onClick={handleClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors active:scale-95">
+                <ImageIcon src="./x-mark.png" size={20} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto no-scrollbar -mx-2 px-2">
+              {children}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // --- 圖鑑內容 ---
+    const PokedexView = ({ discoveredIds }) => (
+      <div className="grid grid-cols-3 gap-4 pb-4">
+        {PLANT_DATABASE.map(plant => {
+          const isDiscovered = discoveredIds.includes(plant.id);
+          return (
+            <div key={plant.id} className={`aspect-square rounded-2xl flex flex-col items-center justify-center p-2 text-center transition-all ${isDiscovered ? 'bg-white border-2 border-emerald-200 shadow-sm' : 'bg-slate-50 border-2 border-slate-100 grayscale opacity-60'}`}>
+              <div className="text-5xl mb-2 filter drop-shadow-sm">{isDiscovered ? plant.icon : (HelpCircle ? <HelpCircle size={40} className="text-slate-300" /> : <span className="text-3xl">?</span>)}</div>
+              <div className={`text-xs font-bold truncate w-full ${isDiscovered ? 'text-emerald-700' : 'text-slate-400'}`}>{isDiscovered ? plant.name : '???'}</div>
+            </div>
+          );
+        })}
+      </div>
+    );
+
+    // --- 成就內容 ---
+    const AchievementsView = () => (
+      <div className="space-y-3 pb-4">
+        {[{ title: "初次探險", desc: "第一次登入遊戲", done: true, icon: '🎉' },
+          { title: "植物學者 I", desc: "收集 5 種不同的植物", done: false, icon: '📜' }
+        ].map((ach, i) => (
+          <div key={i} className={`flex items-center gap-4 p-4 rounded-2xl border-2 bg-white ${ach.done ? 'border-yellow-300 shadow-sm' : 'border-slate-100 grayscale'}`}>
+            <div className="text-3xl">{ach.icon}</div>
+            <div className="flex-1">
+              <h3 className={`font-bold ${ach.done ? 'text-slate-800' : 'text-slate-500'}`}>{ach.title}</h3>
+              <p className="text-xs text-slate-400">{ach.desc}</p>
+            </div>
+            {ach.done && <div className="bg-yellow-400 text-white p-1 rounded-full">{Check ? <Check size={16} strokeWidth={3} /> : <span>V</span>}</div>}
+          </div>
+        ))}
+      </div>
+    );
+
+    // --- 拍照畫面 ---
+    const CaptureUI = ({ plant, onClose, onFinish }) => {
+      const [step, setStep] = useState('preview'); 
+      const handleCapture = () => {
+        setStep('analyzing');
+        setTimeout(() => {
+          setStep('success');
+          setTimeout(() => onFinish(plant.id), 2000);
+        }, 1500);
+      };
+
+      return (
+        <div className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 fade-in">
+          <div className="bg-[#f0fdf4] rounded-[2.5rem] overflow-hidden w-full max-w-sm shadow-2xl relative bounce-in border-4 border-white">
+            <button onClick={onClose} className="absolute top-5 right-5 z-20 bg-black/20 p-2 rounded-full backdrop-blur-md active:scale-95 transition-transform hover:bg-black/30">
+              <ImageIcon src="./x-mark.png" size={20} className="invert" /> 
+            </button>
+            
+            <div className="aspect-[4/5] bg-slate-200 relative flex items-center justify-center overflow-hidden rounded-t-[2rem]">
+              <div className="absolute inset-0 bg-gradient-to-b from-slate-300/50 to-slate-100/50"></div>
+              {step === 'preview' && (
+                <div className="flex flex-col items-center justify-center z-10">
+                  <div className="text-8xl drop-shadow-2xl filter saturate-150 animate-pulse">{plant.icon}</div>
+                  <p className="text-white text-sm font-bold mt-6 bg-black/30 px-4 py-2 rounded-full backdrop-blur-md">對準植物以辨識</p>
+                </div>
+              )}
+              {step === 'analyzing' && (
+                <div className="absolute inset-0 bg-emerald-500/80 flex flex-col items-center justify-center text-white z-20 backdrop-blur-sm">
+                  {Loader2 ? <Loader2 size={56} className="spin mb-4" /> : <div className="spin text-4xl mb-4">⌛</div>}
+                  <p className="text-xl font-black tracking-wider">AI 分析中...</p>
+                </div>
+              )}
+              {step === 'success' && (
+                <div className="absolute inset-0 bg-[#f0fdf4] flex flex-col items-center justify-center text-emerald-600 z-20 slide-up">
+                  <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-4 shadow-md border-4 border-emerald-100">
+                    {Check ? <Check size={48} strokeWidth={3} className="text-emerald-500" /> : <span className="text-4xl text-emerald-500">V</span>}
+                  </div>
+                  <p className="text-3xl font-black">辨識成功!</p>
+                  <p className="text-emerald-700 font-bold mt-2 text-lg">{plant.name}</p>
+                </div>
+              )}
+            </div>
+            <div className="p-6 pt-4 text-center bg-[#f0fdf4]">
+              {step === 'preview' && (
+                <button onClick={handleCapture} className="w-full py-4 bg-gradient-to-r from-emerald-400 to-emerald-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-200 active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+                  {Camera && <Camera className="mb-0.5" />} 拍照辨識
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // --- 選單按鈕組件 ---
+    const MenuButton = ({ imageSrc, label, onClick, delay }) => (
+      <button onClick={onClick} 
+              className="flex flex-col items-center gap-2 group transition-all duration-300"
+              style={{ transitionDelay: `${delay}ms` }}>
+        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-md border-2 border-emerald-50 group-active:scale-95 transition-transform">
+          <ImageIcon src={imageSrc} size={32} />
+        </div>
+        <span className="text-xs font-bold text-emerald-800 bg-white/80 px-2 py-0.5 rounded-full backdrop-blur-sm shadow-sm">{label}</span>
+      </button>
+    );
+
+    // 3. 主程式
+    const App = () => {
+      const [page, setPage] = useState('login'); 
+      const [pos, setPos] = useState({ x: 1500, y: 2500 });
+      const [gender, setGender] = useState('boy');
+      const [activePlantInstance, setActivePlantInstance] = useState(null);
+      const [popup, setPopup] = useState(null);
+      const [discoveredPlantIds, setDiscoveredPlantIds] = useState(['p2']); 
+      const [activeUI, setActiveUI] = useState(null);
+      const [isMenuExpanded, setIsMenuExpanded] = useState(false);
+      const [isMoving, setIsMoving] = useState(false);
+
+      useEffect(() => {
+        if (page !== 'map' || activePlantInstance || activeUI || isMenuExpanded) return; 
+        const keydownHandler = (e) => {
+          const k = e.key.toLowerCase();
+          if (['w', 'arrowup', 's', 'arrowdown', 'a', 'arrowleft', 'd', 'arrowright'].includes(k)) {
+            setIsMoving(true);
+          }
+          setPos(p => {
+            let n = { ...p };
+            let moved = false;
+            if (['w', 'arrowup'].includes(k)) { n.y -= MOVE_SPEED; moved = true; }
+            if (['s', 'arrowdown'].includes(k)) { n.y += MOVE_SPEED; moved = true; }
+            if (['a', 'arrowleft'].includes(k)) { n.x -= MOVE_SPEED; moved = true; }
+            if (['d', 'arrowright'].includes(k)) { n.x += MOVE_SPEED; moved = true; }
+            
+            if (moved) {
+               n.x = Math.max(200, Math.min(MAP_SIZE-200, n.x));
+               n.y = Math.max(200, Math.min(MAP_SIZE-200, n.y));
+            }
+            return n;
+          });
+        };
+        const keyupHandler = (e) => {
+          const k = e.key.toLowerCase();
+          if (['w', 'arrowup', 's', 'arrowdown', 'a', 'arrowleft', 'd', 'arrowright'].includes(k)) {
+            setIsMoving(false);
+          }
+        };
+        window.addEventListener('keydown', keydownHandler);
+        window.addEventListener('keyup', keyupHandler);
+        return () => {
+          window.removeEventListener('keydown', keydownHandler);
+          window.removeEventListener('keyup', keyupHandler);
+        };
+      }, [page, activePlantInstance, activeUI, isMenuExpanded]);
+
+      const dist = (a, b) => Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+
+      const handlePlantDiscovery = (plantId) => {
+        setDiscoveredPlantIds(prev => [...new Set([...prev, plantId])]);
+        setActivePlantInstance(null);
+      };
+
+      const openUI = (uiName) => {
+        setActiveUI(uiName);
+        setIsMenuExpanded(false);
+      };
+
+      const handleMapClick = () => {
+        if (isMenuExpanded) setIsMenuExpanded(false);
+      };
+
+      if (page === 'login') return <LoginUI onLoginSuccess={() => setPage('picker')} />;
+
+      if (page === 'picker') return (
+        <div className="fixed inset-0 z-50 bg-[#ecfdf5] flex items-center justify-center fade-in">
+          <div className="text-center p-8 bg-white/60 rounded-[3rem] backdrop-blur-md shadow-xl border border-white">
+            <h2 className="text-2xl font-bold mb-8 text-emerald-800">選擇您的角色</h2>
+            <div className="flex gap-6 justify-center mb-10">
+              <button onClick={() => setGender('boy')} className={`group relative w-36 h-36 rounded-3xl border-4 transition-all duration-300 overflow-hidden ${gender === 'boy' ? 'border-emerald-500 bg-white scale-110 shadow-emerald-200 shadow-xl' : 'border-transparent hover:bg-white/60'}`}>
+                <img src="./male.png" alt="Boy" className="w-full h-full object-cover" />
+                {gender === 'boy' && <div className="absolute inset-x-0 bottom-0 bg-emerald-500 text-white text-xs font-bold py-1">已選擇</div>}
+              </button>
+              <button onClick={() => setGender('girl')} className={`group relative w-36 h-36 rounded-3xl border-4 transition-all duration-300 overflow-hidden ${gender === 'girl' ? 'border-emerald-500 bg-white scale-110 shadow-emerald-200 shadow-xl' : 'border-transparent hover:bg-white/60'}`}>
+                <img src="./female.png" alt="Girl" className="w-full h-full object-cover" />
+                {gender === 'girl' && <div className="absolute inset-x-0 bottom-0 bg-emerald-500 text-white text-xs font-bold py-1">已選擇</div>}
+              </button>
+            </div>
+            <button onClick={() => setPage('map')} className="px-12 py-4 bg-emerald-600 text-white rounded-full font-bold shadow-xl active:scale-95 hover:bg-emerald-500 transition-colors">
+              進入校園
+            </button>
+          </div>
+        </div>
+      );
+
+      // --- 地圖主畫面 ---
+      return (
+        <div className="relative w-screen h-screen overflow-hidden bg-[#ecfdf5] select-none">
+          <div className="absolute transition-transform duration-100 ease-linear supports-[height:100svh]:h-[100svh]"
+               onClick={handleMapClick}
+               style={{ 
+                 width: MAP_SIZE, height: MAP_SIZE,
+                 transform: `translate3d(${window.innerWidth/2 - pos.x}px, ${window.innerHeight/2 - pos.y}px, 0)`,
+                 backgroundColor: '#ecfdf5',
+                 willChange: 'transform'
+               }}>
+            
+            <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(#bbf7d0 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
+            
+            {INITIAL_BUILDINGS.map(b => (
+              <div key={b.id} onClick={(e) => { e.stopPropagation(); setPopup(b); }}
+                   className="absolute flex flex-col items-center cursor-pointer group z-10" 
+                   style={{ left: b.position.x, top: b.position.y, transform: 'translate(-50%, -50%)' }}>
+                <div className="w-24 h-24 bg-white rounded-3xl shadow-lg border-4 border-[#d1fae5] flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105 bg-white/80 backdrop-blur-sm">
+                  {b.imageSrc ? (
+                    <img src={b.imageSrc} alt={b.name} className="w-full h-full object-contain p-2 opacity-90 mix-blend-multiply" />
+                  ) : (
+                    <div className="text-emerald-500 font-bold">Icon</div>
+                  )}
+                </div>
+                <div className="mt-3 bg-white/90 px-4 py-1.5 rounded-full text-xs font-bold text-emerald-800 shadow-sm whitespace-nowrap border border-emerald-100">{b.name}</div>
+              </div>
+            ))}
+
+            {INITIAL_PLANTS_ON_MAP.map(p => {
+              const isClose = dist(pos, p.position) < 180;
+              const isDiscovered = discoveredPlantIds.includes(p.id);
+              return (
+                <div key={p.instanceId} onClick={(e) => { e.stopPropagation(); isClose && setActivePlantInstance(p); }}
+                     className={`absolute transition-all duration-500 flex items-center justify-center cursor-pointer z-20
+                     ${isClose ? 'scale-110 drop-shadow-lg' : 'scale-100 opacity-70 grayscale-[30%]'}`}
+                     style={{ left: p.position.x, top: p.position.y, transform: 'translate(-50%, -50%)' }}>
+                  <span className={`text-4xl relative z-10 ${isClose ? 'animate-bounce' : ''}`}>{p.icon}</span>
+                  {isClose && (
+                    <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 text-[10px] font-black px-2 py-0.5 rounded-full whitespace-nowrap z-20 border-2 border-white shadow-sm">
+                      {isDiscovered ? '再次觀察' : '點擊辨識!'}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 玩家角色 */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
+             <div className="relative flex flex-col items-center">
+               <img 
+                 src={gender === 'boy' ? './male.png' : './female.png'} 
+                 alt="Player"
+                 className="w-24 h-24 object-contain drop-shadow-lg avatar-img -mt-8 will-change-transform"
+               />
+               <div className="w-16 h-4 bg-emerald-900/10 rounded-full blur-sm -mt-1 -z-10"></div>
+             </div>
+          </div>
+
+          {/* HUD */}
+          <div className="absolute top-0 left-0 p-4 pt-safe-top flex gap-3 z-40">
+             <div className="bg-white/80 backdrop-blur-md p-2 pr-4 rounded-[2rem] shadow-sm border border-white/50 flex items-center gap-3">
+               <div className="w-12 h-12 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-full flex items-center justify-center font-black text-yellow-50 border-2 border-white shadow-inner text-xl">5</div>
+               <div>
+                 <div className="text-[10px] uppercase font-extrabold text-emerald-600/60 tracking-wider">Explorer Lv.</div>
+                 <div className="w-28 h-3 bg-slate-100/80 rounded-full mt-1 overflow-hidden shadow-inner">
+                   <div className="w-[65%] h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full relative"></div>
+                </div>
+               </div>
+             </div>
+          </div>
+          
+          {/* 移動提示 */}
+          {!activeUI && !activePlantInstance && !popup && !isMenuExpanded && !isMoving && (
+            <div className="absolute bottom-32 left-1/2 -translate-x-1/2 text-emerald-700/60 text-xs font-bold bg-white/40 px-6 py-3 rounded-full backdrop-blur-sm pointer-events-none animate-pulse z-30 border border-white/30">
+              使用 W A S D 或 方向鍵 移動
+            </div>
+          )}
+
+          {/* --- 展開式底部選單 --- */}
+          {!activeUI && !activePlantInstance && !popup && !isMoving && (
+            <div className="absolute bottom-0 inset-x-0 pb-safe-bottom z-50 pointer-events-none flex flex-col items-center justify-end mb-6">
+              <div className={`pointer-events-auto flex items-end justify-center gap-6 mb-6 transition-all duration-300 ease-out ${isMenuExpanded ? 'opacity-100 translate-y-0 visible' : 'opacity-0 translate-y-10 invisible'}`}>
+                <MenuButton imageSrc="./open-book.png" label="圖鑑" onClick={() => openUI('pokedex')} delay={0} />
+                <MenuButton imageSrc="./trophy.png" label="成就" onClick={() => openUI('achievements')} delay={50} />
+                <MenuButton imageSrc="./person.png" label="我的" onClick={() => alert('個人資料功能開發中!')} delay={100} />
+              </div>
+
+              <button onClick={() => setIsMenuExpanded(!isMenuExpanded)} 
+                      className={`pointer-events-auto relative w-20 h-20 bg-gradient-to-br from-[#34d399] to-[#059669] rounded-[2rem] flex items-center justify-center shadow-[0_8px_20px_-5px_rgba(16,185,129,0.4)] border-[5px] border-[#ecfdf5] active:scale-95 transition-all duration-300 group z-50 ${isMenuExpanded ? 'rotate-180 bg-slate-700' : ''}`}>
+                 <ImageIcon src={isMenuExpanded ? "./x-mark.png" : "./plant.png"} size={isMenuExpanded ? 32 : 42} className={`transition-all duration-300 ${isMenuExpanded ? 'invert brightness-200' : 'drop-shadow-sm'}`} />
+              </button>
+            </div>
+          )}
+
+          {/* --- 彈出視窗層 --- */}
+          <BottomSheet isOpen={activeUI === 'pokedex'} onClose={() => setActiveUI(null)} title="植物圖鑑" iconSrc="./open-book.png">
+            <PokedexView discoveredIds={discoveredPlantIds} />
+          </BottomSheet>
+
+          <BottomSheet isOpen={activeUI === 'achievements'} onClose={() => setActiveUI(null)} title="成就列表" iconSrc="./trophy.png">
+            <AchievementsView />
+          </BottomSheet>
+
+          {activePlantInstance && (
+            <CaptureUI plant={activePlantInstance} onClose={()=>setActivePlantInstance(null)} onFinish={handlePlantDiscovery} />
+          )}
+          
+          {popup && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-emerald-900/20 backdrop-blur-[3px]" onClick={()=>setPopup(null)}>
+              <div className="bg-[#f0fdf4] p-8 rounded-[2.5rem] max-w-sm shadow-2xl animate-bounce-in border-4 border-white relative" onClick={e=>e.stopPropagation()}>
+                <button className="absolute top-4 right-4 p-2 bg-black/10 rounded-full hover:bg-black/20 transition-colors active:scale-95" onClick={()=>setPopup(null)}>
+                  <ImageIcon src="./x-mark.png" size={20} />
+                </button>
+                <div className="w-28 h-28 bg-white rounded-3xl flex items-center justify-center mb-6 mx-auto shadow-sm border-2 border-emerald-100 p-4">
+                   {popup.imageSrc ? (
+                    <img src={popup.imageSrc} alt={popup.name} className="w-full h-full object-contain opacity-90 mix-blend-multiply" />
+                  ) : (
+                    <div className="text-emerald-500 font-bold">Icon</div>
+                  )}
+                </div>
+                <h3 className="text-2xl font-black text-center mb-3 text-emerald-900">{popup.name}</h3>
+                <p className="text-slate-600 text-center text-sm leading-relaxed font-medium">{popup.desc}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const LoginUI = ({ onLoginSuccess }) => {
+      const [loading, setLoading] = useState(false);
+      const handleLogin = (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setTimeout(() => { onLoginSuccess(); setLoading(false); }, 800);
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 bg-[#ecfdf5] flex items-center justify-center p-6 fade-in">
+          <div className="bg-white/60 backdrop-blur-md p-8 rounded-[2.5rem] shadow-xl w-full max-w-sm border-2 border-white">
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-3xl mx-auto flex items-center justify-center text-white mb-4 shadow-lg shadow-emerald-200">
+                {Sprout ? <Sprout size={40} /> : <span className="text-4xl">🌱</span>}
+              </div>
+              <h1 className="text-3xl font-black text-emerald-900 tracking-tight">PlantGo!</h1>
+            </div>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <input className="w-full p-4 bg-white/80 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-emerald-400 outline-none" placeholder="學號信箱" value="s1120325@o365st.pu.edu.tw" readOnly />
+              <input type="password" className="w-full p-4 bg-white/80 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-emerald-400 outline-none" placeholder="密碼" value="Gary.0924" readOnly />
+              <button disabled={loading} className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-2xl font-black text-lg shadow-lg shadow-emerald-200/50 active:scale-[0.98] transition-all mt-6">
+                {loading ? (Loader2 ? <Loader2 className="spin mx-auto" /> : '...') : '開始探險'}
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
