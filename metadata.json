@@ -1,8 +1,0 @@
-{
-  "name": "PlantGo: AI Plant Explorer",
-  "description": "An augmented reality exploration game where you discover, identify, and catalog plants using AI. Move around the map, find rare species, and earn 'First Explorer' badges.",
-  "requestFramePermissions": [
-    "camera",
-    "geolocation"
-  ]
-}
