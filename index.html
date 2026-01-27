@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>PlantGo: Cute Blue Theme</title>
+  <title>PlantGo: Chapel Update</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -23,8 +23,7 @@
   <script src="https://unpkg.com/lucide-react@0.292.0/dist/umd/lucide-react.min.js"></script>
 
   <style>
-    /* 1. 背景色改成粉嫩寶寶藍 (#e0f2fe) */
-    body { margin: 0; overflow: hidden; background-color: #e0f2fe; touch-action: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { margin: 0; overflow: hidden; background-color: #fcfbf7; touch-action: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     
     .fade-in { animation: fadeIn 0.3s ease-out; }
     .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -53,7 +52,9 @@
     const Icons = window.lucideReact || {};
     const { 
       Sprout, Camera, Compass, LibraryBig, School, 
-      Loader2, Check, HelpCircle, BookOpen, Trophy, User
+      Loader2, Check, HelpCircle, BookOpen, Trophy, User, 
+      Image: ImageIconLucide, Plus, Calendar, Clock, Footprints,
+      Utensils, Home, Dumbbell, Building2, Church // 新增 Church 圖標
     } = Icons;
 
     // --- 圖片組件 ---
@@ -65,59 +66,48 @@
     const MAP_SIZE = 3000;
     const MOVE_SPEED = 25;
 
-    // --- 新增：可愛樹木 SVG 組件 (直接畫，絕對不報錯) ---
-    const CuteTree = ({ size, opacity }) => (
-      <svg width={size} height={size} viewBox="0 0 100 100" fill="none" style={{ opacity: opacity }}>
-        {/* 樹幹：淡藍色 */}
-        <rect x="42" y="60" width="16" height="30" rx="4" fill="#7dd3fc" />
-        {/* 樹冠：三個圓球組成雲朵狀，顏色是稍深的粉藍 */}
-        <circle cx="30" cy="50" r="22" fill="#bae6fd" />
-        <circle cx="70" cy="50" r="22" fill="#bae6fd" />
-        <circle cx="50" cy="30" r="25" fill="#bae6fd" />
-      </svg>
-    );
-
-    // --- 新增：背景圖層組件 ---
+    // --- 背景組件：只顯示真實地圖 ---
     const BackgroundLayer = () => {
-      // 隨機生成樹木的位置，只生成一次 (useMemo)
-      const trees = useMemo(() => {
-        return Array.from({ length: 40 }).map((_, i) => ({
-          id: i,
-          x: Math.random() * MAP_SIZE,
-          y: Math.random() * MAP_SIZE,
-          size: 120 + Math.random() * 100, // 樹很大，像背景浮水印
-          opacity: 0.3 + Math.random() * 0.3, // 透明度變化
-          rotation: Math.random() * 10 - 5, // 微微傾斜
-        }));
-      }, []);
-
       return (
         <div className="absolute inset-0 pointer-events-none z-0">
-          {/* 1. 極淡的白色網點 (取代原本的線條，更乾淨) */}
-          <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(#ffffff 2px, transparent 2px)', backgroundSize: '60px 60px', opacity: 0.5 }} />
-          
-          {/* 2. 隨機散佈的可愛樹 */}
-          {trees.map(t => (
-            <div key={t.id} 
-                 className="absolute"
-                 style={{ 
-                   left: t.x, 
-                   top: t.y, 
-                   transform: `translate(-50%, -50%) rotate(${t.rotation}deg)` 
-                 }}>
-              <CuteTree size={t.size} opacity={t.opacity} />
-            </div>
-          ))}
+          <img 
+            src="./map.png" 
+            alt="Campus Map" 
+            className="absolute inset-0 w-full h-full object-cover" 
+            style={{ opacity: 1.0 }} 
+          />
         </div>
       );
     };
 
-    // --- 模擬資料 ---
+    // --- 建築物資料 ---
+    // 🔴 修改：手動加入了「主顧聖母堂」並更新了詳細介紹
     const INITIAL_BUILDINGS = [
-      { id: '1', name: '靜宜校門', imageSrc: './gate.png', position: { x: 1500, y: 2850 }, desc: '冒險的入口，見證無數靜宜人的啟航。' },
-      { id: '2', name: '主顧聖母堂', imageSrc: './church_sketch.png', position: { x: 1200, y: 2000 }, desc: '最具指標性的建築，象徵魚與生命。' },
-      { id: '3', name: '蓋夏圖書館', imageSrc: './library.png', position: { x: 2300, y: 1200 }, desc: '知識的殿堂，藏書豐富。' },
-      { id: '4', name: '至善樓', imageSrc: './school.png', position: { x: 1800, y: 1500 }, desc: '教學行政中心，周圍綠意盎然。' },
+      // 特別新增：主顧聖母堂
+      { 
+        id: 'chapel', 
+        name: '主顧聖母堂', 
+        imageSrc: './church_sketch.png', 
+        position: { x: 2000, y: 2400 },
+        desc: '主顧聖母堂位於台中市沙鹿區靜宜大學內，是一座融合信仰與現代設計的天主教聖堂，落成於2019年底。該教堂由四個弧形牆板組成，外觀如竹筍包覆，並從高處俯瞰呈魚的意象，象徵「五餅二魚」的聖經故事。其特色為屋頂的玻璃十字架，光影變化豐富，被視為台中的新地標，也成為熱門的婚紗拍攝點。 以下為主顧聖母堂的詳細介紹：設計理念：以「擁抱世界、萬眾合一」為主題，四片斜曲牆體以竹子為意象，象徵謙虛、氣節與心靈重生。建築外觀與特色：魚型設計：高空俯瞰為「魚」的造型，象徵耶穌的「五餅二魚」神蹟。光之教堂：頂部有玻璃組成的十字架，陽光穿透時會產生不同光影，象徵「世界的光」。特殊結構：四個弧形牆版由低而高相互包覆，營造出溫柔的包圍感，具有挑戰性的結構設計。文化與地點意義：校門口到聖母堂是一條筆直的路，象徵正直與「永生幸福之路」。為紀念「主顧修女會」在亞洲服務100週年，同時傳承創辦人「蓋夏姆姆」的精神。'
+      },
+      { id: '1', name: '校門', visualIcon: Compass, position: { x: 2300, y: 2750 }, desc: '靜宜的起點，夢想啟航的地方。' },
+      { id: '2', name: '任垣樓', visualIcon: School, position: { x: 1800, y: 1900 }, desc: '人文與社會科學的搖籃。' },
+      { id: '3', name: '伯鐸樓', visualIcon: School, position: { x: 2150, y: 1650 }, desc: '培育專業人才的教學大樓。' },
+      { id: '4', name: '蓋夏圖書館', visualIcon: LibraryBig, position: { x: 1900, y: 1400 }, desc: '知識的寶庫，擁有豐富館藏。' },
+      { id: '5', name: '靜安樓', visualIcon: Building2, position: { x: 2200, y: 1100 }, desc: '行政與教學的綜合空間。' },
+      { id: '6', name: '格倫樓', visualIcon: Building2, position: { x: 2050, y: 800 }, desc: '國際會議與學術交流中心。' },
+      { id: '7', name: '主顧樓', visualIcon: School, position: { x: 1650, y: 650 }, desc: '學校的核心行政中心。' },
+      { id: '8', name: '方濟樓', visualIcon: School, position: { x: 1200, y: 650 }, desc: '寧靜優雅的學習環境。' },
+      { id: '9', name: '修院', visualIcon: Home, position: { x: 1100, y: 950 }, desc: '莊嚴肅穆的修道場所。' },
+      { id: '10', name: '思源樓', visualIcon: School, position: { x: 1600, y: 1050 }, desc: '飲水思源，科學實驗基地。' },
+      { id: '11', name: '文興樓', visualIcon: School, position: { x: 2600, y: 400 }, desc: '外語與文學的殿堂。' },
+      { id: '12', name: '靜園餐廳', visualIcon: Utensils, position: { x: 1300, y: 1250 }, desc: '美味與聚餐的好去處。' },
+      { id: '13', name: '希嘉學苑', visualIcon: Home, position: { x: 1100, y: 1650 }, desc: '溫馨舒適的學生宿舍。' },
+      { id: '14', name: '宜園餐廳', visualIcon: Utensils, position: { x: 1200, y: 2000 }, desc: '提供多樣化的餐飲選擇。' },
+      { id: '15', name: '至善樓', visualIcon: School, position: { x: 2350, y: 1250 }, desc: '學生活動中心，充滿活力。' },
+      { id: '16', name: '思高學苑', visualIcon: Home, position: { x: 700, y: 1300 }, desc: '環境清幽的學生宿舍。' },
+      { id: '17', name: '若望保祿二世體育館', visualIcon: Dumbbell, position: { x: 600, y: 1600 }, desc: '鍛鍊體魄的室內場館。' },
     ];
 
     const PLANT_DATABASE = [
@@ -130,8 +120,8 @@
     ];
 
     const INITIAL_PLANTS_ON_MAP = [
-      { ...PLANT_DATABASE[0], position: { x: 1150, y: 2050 }, instanceId: 'i1' },
-      { ...PLANT_DATABASE[1], position: { x: 1580, y: 2780 }, instanceId: 'i2' },
+      { ...PLANT_DATABASE[0], position: { x: 1650, y: 2100 }, instanceId: 'i1' },
+      { ...PLANT_DATABASE[1], position: { x: 2200, y: 2700 }, instanceId: 'i2' },
       ...Array.from({ length: 30 }).map((_, i) => {
         const basePlant = PLANT_DATABASE[Math.floor(Math.random() * PLANT_DATABASE.length)];
         return {
@@ -142,7 +132,27 @@
       })
     ];
 
-    // --- 底部面板組件 ---
+    const SEASONAL_MISSIONS = [
+      { id: 1, title: "捕捉春季盛開的櫻花", target: "山櫻花", current: 1, total: 3, icon: "🌸", season: "春季限定" },
+      { id: 2, title: "尋找三月羊蹄甲", target: "羊蹄甲", current: 0, total: 1, icon: "🌺", season: "當季熱門" },
+      { id: 3, title: "每日挑戰：古榕巡禮", target: "校門古榕", current: 0, total: 1, icon: "🌳", season: "每日任務" },
+    ];
+
+    const MOCK_FRIENDS = [
+        { id: 1, name: "小明", avatar: "👦", online: true },
+        { id: 2, name: "阿美", avatar: "👧", online: false },
+        { id: 4, name: "阿豪", avatar: "🧑‍🦱", online: true },
+    ];
+    const MOCK_REQUESTS = [
+        { id: 3, name: "王大錘", avatar: "🧔‍♂️" },
+    ];
+
+    const FallbackIcon = ({ name }) => <span className="text-xs font-bold opacity-30">○</span>;
+    const Icon = ({ component: Comp, ...props }) => {
+      if (!Comp) return <FallbackIcon name="unknown" />;
+      return <Comp {...props} />;
+    };
+
     const BottomSheet = ({ isOpen, onClose, title, children, iconSrc }) => {
       const [isAnimatingOut, setIsAnimatingOut] = useState(false);
 
@@ -163,16 +173,15 @@
       return (
         <div className="fixed inset-0 z-50 flex items-end justify-center">
           <div className={`absolute inset-0 bg-black/40 transition-opacity duration-300 ${isOpen && !isAnimatingOut ? 'opacity-100' : 'opacity-0'}`} onClick={handleClose}></div>
-          {/* 背景色調整為與主背景一致的淺藍色 */}
-          <div className={`relative w-full max-w-md bg-[#e0f2fe] rounded-t-[2.5rem] p-6 pb-safe-bottom shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.2)] ${isAnimatingOut ? 'slide-down-out' : 'slide-up'}`} style={{maxHeight: '85vh', display: 'flex', flexDirection: 'column'}}>
+          <div className={`relative w-full max-w-md bg-[#f0fdf4] rounded-t-[2.5rem] p-6 pb-safe-bottom shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.2)] ${isAnimatingOut ? 'slide-down-out' : 'slide-up'}`} style={{maxHeight: '85vh', display: 'flex', flexDirection: 'column'}}>
             <div className="flex items-center justify-between mb-6 flex-shrink-0">
-              <div className="flex items-center gap-3 text-sky-900">
-                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
+              <div className="flex items-center gap-3 text-emerald-900">
+                <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center shadow-sm">
                   <ImageIcon src={iconSrc} size={28} />
                 </div>
                 <h2 className="text-2xl font-bold">{title}</h2>
               </div>
-              <button onClick={handleClose} className="p-2 bg-white rounded-full hover:bg-sky-50 transition-colors active:scale-95 shadow-sm">
+              <button onClick={handleClose} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors active:scale-95">
                 <ImageIcon src="./x-mark.png" size={20} />
               </button>
             </div>
@@ -184,22 +193,20 @@
       );
     };
 
-    // --- 圖鑑內容 ---
     const PokedexView = ({ discoveredIds }) => (
       <div className="grid grid-cols-3 gap-4 pb-4">
         {PLANT_DATABASE.map(plant => {
           const isDiscovered = discoveredIds.includes(plant.id);
           return (
-            <div key={plant.id} className={`aspect-square rounded-2xl flex flex-col items-center justify-center p-2 text-center transition-all ${isDiscovered ? 'bg-white border-2 border-sky-200 shadow-sm' : 'bg-slate-50 border-2 border-slate-100 grayscale opacity-60'}`}>
-              <div className="text-5xl mb-2 filter drop-shadow-sm">{isDiscovered ? plant.icon : (HelpCircle ? <HelpCircle size={40} className="text-slate-300" /> : <span className="text-3xl">?</span>)}</div>
-              <div className={`text-xs font-bold truncate w-full ${isDiscovered ? 'text-sky-700' : 'text-slate-400'}`}>{isDiscovered ? plant.name : '???'}</div>
+            <div key={plant.id} className={`aspect-square rounded-2xl flex flex-col items-center justify-center p-2 text-center transition-all ${isDiscovered ? 'bg-white border-2 border-emerald-200 shadow-sm' : 'bg-slate-50 border-2 border-slate-100 grayscale opacity-60'}`}>
+              <div className="text-5xl mb-2 filter drop-shadow-sm">{isDiscovered ? plant.icon : <Icon component={HelpCircle} size={40} className="text-slate-300" />}</div>
+              <div className={`text-xs font-bold truncate w-full ${isDiscovered ? 'text-emerald-700' : 'text-slate-400'}`}>{isDiscovered ? plant.name : '???'}</div>
             </div>
           );
         })}
       </div>
     );
 
-    // --- 成就內容 ---
     const AchievementsView = () => (
       <div className="space-y-3 pb-4">
         {[{ title: "初次探險", desc: "第一次登入遊戲", done: true, icon: '🎉' },
@@ -211,13 +218,142 @@
               <h3 className={`font-bold ${ach.done ? 'text-slate-800' : 'text-slate-500'}`}>{ach.title}</h3>
               <p className="text-xs text-slate-400">{ach.desc}</p>
             </div>
-            {ach.done && <div className="bg-yellow-400 text-white p-1 rounded-full">{Check ? <Check size={16} strokeWidth={3} /> : <span>V</span>}</div>}
+            {ach.done && <div className="bg-yellow-400 text-white p-1 rounded-full"><Icon component={Check} size={16} strokeWidth={3} /></div>}
           </div>
         ))}
       </div>
     );
 
-    // --- 拍照畫面 ---
+    const CollageView = () => (
+      <div className="pb-4">
+         <div className="bg-white rounded-3xl p-6 border-2 border-dashed border-emerald-200 text-center mb-4">
+            <div className="w-24 h-24 bg-emerald-50 rounded-full mx-auto flex items-center justify-center mb-3">
+               <ImageIcon src="./gallery.png" size={48} className="opacity-50" />
+            </div>
+            <p className="text-emerald-900 font-bold text-lg mb-1">開始你的拼貼創作</p>
+            <p className="text-slate-400 text-xs mb-4">選擇你收集到的植物照片，<br/>製作獨一無二的校園回憶！</p>
+            <button className="px-8 py-3 bg-emerald-500 text-white rounded-xl font-bold shadow-lg shadow-emerald-200 active:scale-95 transition-all flex items-center gap-2 mx-auto">
+               <Icon component={Plus} size={18} /> 選擇照片
+            </button>
+         </div>
+      </div>
+    );
+
+    const MissionView = () => (
+      <div className="pb-4 space-y-4">
+        {SEASONAL_MISSIONS.map(mission => (
+          <div key={mission.id} className="bg-white rounded-2xl p-4 shadow-sm border-2 border-emerald-100 relative overflow-hidden">
+            <div className={`absolute top-0 right-0 px-3 py-1 text-[10px] font-bold text-white rounded-bl-xl ${mission.season.includes('春') ? 'bg-pink-400' : 'bg-emerald-400'}`}>
+              {mission.season}
+            </div>
+            <div className="flex gap-4 items-center mb-3">
+              <div className="w-14 h-14 bg-emerald-50 rounded-xl flex items-center justify-center text-3xl shadow-inner">
+                {mission.icon}
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-emerald-900">{mission.title}</h3>
+                <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
+                  <Icon component={Camera} size={12} /> 目標：拍攝 {mission.total} 張{mission.target}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-emerald-300 to-emerald-500 transition-all duration-500" style={{ width: `${(mission.current / mission.total) * 100}%` }}></div>
+              </div>
+              <span className="text-xs font-black text-emerald-600">{mission.current}/{mission.total}</span>
+            </div>
+          </div>
+        ))}
+        <div className="bg-emerald-100/50 rounded-xl p-4 text-center">
+          <p className="text-xs text-emerald-800 font-bold flex items-center justify-center gap-2">
+            <Icon component={Clock} size={14} /> 任務將在 12 小時後刷新
+          </p>
+        </div>
+      </div>
+    );
+
+    const StatusView = () => (
+      <div className="pb-4 space-y-4">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border-2 border-emerald-100">
+             <h3 className="text-emerald-900 font-bold mb-4 flex items-center gap-2">
+                 <Icon component={Trophy} size={20} className="text-yellow-500" /> 經驗值詳情
+             </h3>
+             <div className="flex items-center justify-between mb-2">
+                 <span className="text-3xl font-black text-emerald-500">Lv.5</span>
+                 <span className="text-sm text-slate-400 font-bold">650/1000 XP</span>
+             </div>
+             <div className="h-5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                 <div className="h-full bg-gradient-to-r from-emerald-300 to-emerald-500 relative" style={{width: '65%'}}>
+                    <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                 </div>
+             </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-sm border-2 border-emerald-100">
+             <h3 className="text-emerald-900 font-bold mb-4 flex items-center gap-2">
+                 <Icon component={Footprints} size={20} className="text-emerald-500" /> 今日步數
+             </h3>
+             <div className="text-center">
+                 <div className="text-5xl font-black text-emerald-500 mb-1 flex items-end justify-center gap-2">
+                    8,542 <span className="text-lg text-slate-400 pb-1 font-bold">步</span>
+                 </div>
+                 <div className="text-sm text-emerald-600/60 font-bold mb-4">目標: 10,000 步</div>
+                 <div className="h-4 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                     <div className="h-full bg-gradient-to-r from-emerald-300 to-emerald-500 relative" style={{width: '85%'}}></div>
+                 </div>
+             </div>
+        </div>
+      </div>
+    );
+
+    const ProfileView = () => (
+        <div className="pb-4 space-y-6">
+            {MOCK_REQUESTS.length > 0 && (
+                <div>
+                    <h3 className="text-emerald-900 font-bold mb-3 px-2 flex items-center justify-between">
+                        <span>交友邀請</span>
+                        <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">{MOCK_REQUESTS.length}</span>
+                    </h3>
+                    <div className="bg-white rounded-2xl p-2 shadow-sm border-2 border-emerald-100 space-y-2">
+                        {MOCK_REQUESTS.map(req => (
+                            <div key={req.id} className="flex items-center justify-between p-3 bg-emerald-50/50 rounded-xl">
+                                <div className="flex items-center gap-3">
+                                    <div className="text-3xl bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-sm">{req.avatar}</div>
+                                    <div className="font-bold text-emerald-900">{req.name}</div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button className="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold active:scale-95 transition-transform shadow-sm">接受</button>
+                                    <button className="bg-slate-200 text-slate-500 px-3 py-1.5 rounded-lg text-xs font-bold active:scale-95 transition-transform">拒絕</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <div>
+                <h3 className="text-emerald-900 font-bold mb-3 px-2">好友列表 ({MOCK_FRIENDS.length})</h3>
+                 <div className="bg-white rounded-2xl p-2 shadow-sm border-2 border-emerald-100 space-y-1">
+                     {MOCK_FRIENDS.map(friend => (
+                         <div key={friend.id} className="flex items-center justify-between p-3 hover:bg-slate-50 rounded-xl transition-colors">
+                             <div className="flex items-center gap-3">
+                                 <div className="relative">
+                                     <div className="text-3xl bg-slate-100 rounded-full w-12 h-12 flex items-center justify-center border-2 border-white shadow-sm">{friend.avatar}</div>
+                                     {friend.online && <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-white shadow-sm"></div>}
+                                 </div>
+                                 <div className="font-bold text-emerald-900 text-lg">{friend.name}</div>
+                             </div>
+                             <button className="p-2 bg-slate-100 text-slate-400 rounded-full hover:bg-emerald-100 hover:text-emerald-500 transition-colors">
+                                 <Icon component={User} size={20} />
+                             </button>
+                         </div>
+                     ))}
+                 </div>
+            </div>
+        </div>
+    );
+
     const CaptureUI = ({ plant, onClose, onFinish }) => {
       const [step, setStep] = useState('preview'); 
       const handleCapture = () => {
@@ -230,14 +366,13 @@
 
       return (
         <div className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6 fade-in">
-          {/* 背景色調整 */}
-          <div className="bg-[#e0f2fe] rounded-[2.5rem] overflow-hidden w-full max-w-sm shadow-2xl relative bounce-in border-4 border-white">
+          <div className="bg-[#f0fdf4] rounded-[2.5rem] overflow-hidden w-full max-w-sm shadow-2xl relative bounce-in border-4 border-white">
             <button onClick={onClose} className="absolute top-5 right-5 z-20 bg-black/20 p-2 rounded-full backdrop-blur-md active:scale-95 transition-transform hover:bg-black/30">
               <ImageIcon src="./x-mark.png" size={20} className="invert" /> 
             </button>
             
             <div className="aspect-[4/5] bg-slate-200 relative flex items-center justify-center overflow-hidden rounded-t-[2rem]">
-              <div className="absolute inset-0 bg-gradient-to-b from-sky-300/30 to-sky-100/30"></div>
+              <div className="absolute inset-0 bg-gradient-to-b from-slate-300/50 to-slate-100/50"></div>
               {step === 'preview' && (
                 <div className="flex flex-col items-center justify-center z-10">
                   <div className="text-8xl drop-shadow-2xl filter saturate-150 animate-pulse">{plant.icon}</div>
@@ -245,25 +380,25 @@
                 </div>
               )}
               {step === 'analyzing' && (
-                <div className="absolute inset-0 bg-sky-500/80 flex flex-col items-center justify-center text-white z-20 backdrop-blur-sm">
-                  {Loader2 ? <Loader2 size={56} className="spin mb-4" /> : <div className="spin text-4xl mb-4">⌛</div>}
+                <div className="absolute inset-0 bg-emerald-500/80 flex flex-col items-center justify-center text-white z-20 backdrop-blur-sm">
+                  <Icon component={Loader2} size={56} className="spin mb-4" />
                   <p className="text-xl font-black tracking-wider">AI 分析中...</p>
                 </div>
               )}
               {step === 'success' && (
-                <div className="absolute inset-0 bg-[#e0f2fe] flex flex-col items-center justify-center text-sky-600 z-20 slide-up">
-                  <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-4 shadow-md border-4 border-sky-100">
-                    {Check ? <Check size={48} strokeWidth={3} className="text-sky-500" /> : <span className="text-4xl text-emerald-500">V</span>}
+                <div className="absolute inset-0 bg-[#f0fdf4] flex flex-col items-center justify-center text-emerald-600 z-20 slide-up">
+                  <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-4 shadow-md border-4 border-emerald-100">
+                    <Icon component={Check} size={48} strokeWidth={3} className="text-emerald-500" />
                   </div>
                   <p className="text-3xl font-black">辨識成功!</p>
-                  <p className="text-sky-700 font-bold mt-2 text-lg">{plant.name}</p>
+                  <p className="text-emerald-700 font-bold mt-2 text-lg">{plant.name}</p>
                 </div>
               )}
             </div>
-            <div className="p-6 pt-4 text-center bg-[#e0f2fe]">
+            <div className="p-6 pt-4 text-center bg-[#f0fdf4]">
               {step === 'preview' && (
-                <button onClick={handleCapture} className="w-full py-4 bg-gradient-to-r from-sky-400 to-sky-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-sky-200 active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
-                  {Camera && <Camera className="mb-0.5" />} 拍照辨識
+                <button onClick={handleCapture} className="w-full py-4 bg-gradient-to-r from-emerald-400 to-emerald-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-200 active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+                  <Icon component={Camera} className="mb-0.5" /> 拍照辨識
                 </button>
               )}
             </div>
@@ -272,22 +407,20 @@
       );
     };
 
-    // --- 選單按鈕組件 ---
     const MenuButton = ({ imageSrc, label, onClick, delay }) => (
       <button onClick={onClick} 
               className="flex flex-col items-center gap-2 group transition-all duration-300"
               style={{ transitionDelay: `${delay}ms` }}>
-        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-md border-2 border-sky-50 group-active:scale-95 transition-transform">
+        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-md border-2 border-emerald-50 group-active:scale-95 transition-transform">
           <ImageIcon src={imageSrc} size={32} />
         </div>
-        <span className="text-xs font-bold text-sky-800 bg-white/80 px-2 py-0.5 rounded-full backdrop-blur-sm shadow-sm">{label}</span>
+        <span className="text-xs font-bold text-emerald-800 bg-white/80 px-2 py-0.5 rounded-full backdrop-blur-sm shadow-sm">{label}</span>
       </button>
     );
 
-    // 3. 主程式
     const App = () => {
       const [page, setPage] = useState('login'); 
-      const [pos, setPos] = useState({ x: 1500, y: 2500 });
+      const [pos, setPos] = useState({ x: 2300, y: 2800 }); 
       const [gender, setGender] = useState('boy');
       const [activePlantInstance, setActivePlantInstance] = useState(null);
       const [popup, setPopup] = useState(null);
@@ -351,20 +484,20 @@
       if (page === 'login') return <LoginUI onLoginSuccess={() => setPage('picker')} />;
 
       if (page === 'picker') return (
-        <div className="fixed inset-0 z-50 bg-[#e0f2fe] flex items-center justify-center fade-in">
+        <div className="fixed inset-0 z-50 bg-[#f0fdf4] flex items-center justify-center fade-in">
           <div className="text-center p-8 bg-white/60 rounded-[3rem] backdrop-blur-md shadow-xl border border-white">
-            <h2 className="text-2xl font-bold mb-8 text-sky-800">選擇您的角色</h2>
+            <h2 className="text-2xl font-bold mb-8 text-emerald-800">選擇您的角色</h2>
             <div className="flex gap-6 justify-center mb-10">
-              <button onClick={() => setGender('boy')} className={`group relative w-36 h-36 rounded-3xl border-4 transition-all duration-300 overflow-hidden ${gender === 'boy' ? 'border-sky-400 bg-white scale-110 shadow-sky-200 shadow-xl' : 'border-transparent hover:bg-white/60'}`}>
+              <button onClick={() => setGender('boy')} className={`group relative w-36 h-36 rounded-3xl border-4 transition-all duration-300 overflow-hidden ${gender === 'boy' ? 'border-emerald-500 bg-white scale-110 shadow-emerald-200 shadow-xl' : 'border-transparent hover:bg-white/60'}`}>
                 <img src="./male.png" alt="Boy" className="w-full h-full object-cover" />
-                {gender === 'boy' && <div className="absolute inset-x-0 bottom-0 bg-sky-400 text-white text-xs font-bold py-1">已選擇</div>}
+                {gender === 'boy' && <div className="absolute inset-x-0 bottom-0 bg-emerald-500 text-white text-xs font-bold py-1">已選擇</div>}
               </button>
-              <button onClick={() => setGender('girl')} className={`group relative w-36 h-36 rounded-3xl border-4 transition-all duration-300 overflow-hidden ${gender === 'girl' ? 'border-sky-400 bg-white scale-110 shadow-sky-200 shadow-xl' : 'border-transparent hover:bg-white/60'}`}>
+              <button onClick={() => setGender('girl')} className={`group relative w-36 h-36 rounded-3xl border-4 transition-all duration-300 overflow-hidden ${gender === 'girl' ? 'border-emerald-500 bg-white scale-110 shadow-emerald-200 shadow-xl' : 'border-transparent hover:bg-white/60'}`}>
                 <img src="./female.png" alt="Girl" className="w-full h-full object-cover" />
-                {gender === 'girl' && <div className="absolute inset-x-0 bottom-0 bg-sky-400 text-white text-xs font-bold py-1">已選擇</div>}
+                {gender === 'girl' && <div className="absolute inset-x-0 bottom-0 bg-emerald-500 text-white text-xs font-bold py-1">已選擇</div>}
               </button>
             </div>
-            <button onClick={() => setPage('map')} className="px-12 py-4 bg-sky-500 text-white rounded-full font-bold shadow-xl active:scale-95 hover:bg-sky-600 transition-colors">
+            <button onClick={() => setPage('map')} className="px-12 py-4 bg-emerald-500 text-white rounded-full font-bold shadow-xl active:scale-95 hover:bg-emerald-600 transition-colors">
               進入校園
             </button>
           </div>
@@ -373,31 +506,36 @@
 
       // --- 地圖主畫面 ---
       return (
-        <div className="relative w-screen h-screen overflow-hidden bg-[#e0f2fe] select-none">
+        <div className="relative w-screen h-screen overflow-hidden bg-[#f0fdf4] select-none">
           <div className="absolute transition-transform duration-100 ease-linear supports-[height:100svh]:h-[100svh]"
                onClick={handleMapClick}
                style={{ 
                  width: MAP_SIZE, height: MAP_SIZE,
                  transform: `translate3d(${window.innerWidth/2 - pos.x}px, ${window.innerHeight/2 - pos.y}px, 0)`,
-                 backgroundColor: '#e0f2fe',
+                 backgroundColor: '#f0fdf4',
                  willChange: 'transform'
                }}>
             
-            {/* 1. 插入可愛樹木背景圖層 (絕對定位，會隨地圖移動) */}
             <BackgroundLayer />
             
             {INITIAL_BUILDINGS.map(b => (
               <div key={b.id} onClick={(e) => { e.stopPropagation(); setPopup(b); }}
                    className="absolute flex flex-col items-center cursor-pointer group z-10" 
                    style={{ left: b.position.x, top: b.position.y, transform: 'translate(-50%, -50%)' }}>
-                <div className="w-24 h-24 bg-white rounded-3xl shadow-lg border-4 border-[#bae6fd] flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105 bg-white/80 backdrop-blur-sm">
-                  {b.imageSrc ? (
+                <div className="w-24 h-24 bg-white rounded-3xl shadow-lg border-4 border-[#d1fae5] flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105 bg-white/80 backdrop-blur-sm">
+                  {/* 如果是校門或教堂用圖片，其他用圖標 */}
+                  {(b.id === '1' || b.id === 'chapel') && b.imageSrc ? (
                     <img src={b.imageSrc} alt={b.name} className="w-full h-full object-contain p-2 opacity-90 mix-blend-multiply" />
                   ) : (
-                    <div className="text-emerald-500 font-bold">Icon</div>
+                    <Icon component={b.visualIcon || School} size={32} className="text-emerald-500" />
                   )}
                 </div>
-                <div className="mt-3 bg-white/90 px-4 py-1.5 rounded-full text-xs font-bold text-sky-800 shadow-sm whitespace-nowrap border border-sky-100">{b.name}</div>
+                {/* 顯示建築名稱 */}
+                <div className="mt-3 bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-emerald-800 shadow-sm whitespace-nowrap border border-emerald-100 flex items-center gap-1">
+                   {/* 如果有數字 ID 顯示數字，沒有則不顯示 */}
+                   {/^\d+$/.test(b.id) && <span className="bg-emerald-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]">{b.id}</span>}
+                   {b.name}
+                </div>
               </div>
             ))}
 
@@ -420,7 +558,7 @@
             })}
           </div>
 
-          {/* 玩家角色*/}
+          {/* 玩家角色 */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
              <div className="relative flex flex-col items-center">
                <img 
@@ -428,47 +566,58 @@
                  alt="Player"
                  className="w-36 h-36 object-contain drop-shadow-lg avatar-img -mt-12 will-change-transform"
                />
-               <div className="w-24 h-5 bg-sky-900/10 rounded-full blur-sm -mt-2 -z-10"></div>
+               <div className="w-24 h-5 bg-emerald-900/10 rounded-full blur-sm -mt-2 -z-10"></div>
              </div>
           </div>
 
-          {/* HUD (配色調整為藍色系) */}
-          <div className="absolute top-0 left-0 p-4 pt-safe-top flex gap-3 z-40">
-             <div className="bg-white/80 backdrop-blur-md p-2 pr-4 rounded-[2rem] shadow-sm border border-white/50 flex items-center gap-3">
+          <button onClick={() => openUI('status')} className="absolute top-0 left-0 p-4 pt-safe-top flex gap-3 z-40 active:scale-95 transition-transform text-left group">
+             <div className="bg-white/80 backdrop-blur-md p-2 pr-4 rounded-[2rem] shadow-sm border border-white/50 flex items-center gap-3 group-hover:bg-white">
                <div className="w-12 h-12 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-full flex items-center justify-center font-black text-yellow-50 border-2 border-white shadow-inner text-xl">5</div>
                <div>
-                 <div className="text-[10px] uppercase font-extrabold text-sky-600/60 tracking-wider">Explorer Lv.</div>
+                 <div className="text-[10px] uppercase font-extrabold text-emerald-600/60 tracking-wider">Explorer Lv.</div>
                  <div className="w-28 h-3 bg-slate-100/80 rounded-full mt-1 overflow-hidden shadow-inner">
-                   <div className="w-[65%] h-full bg-gradient-to-r from-sky-400 to-sky-500 rounded-full relative"></div>
+                   <div className="w-[65%] h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full relative"></div>
                 </div>
                </div>
              </div>
-          </div>
+          </button>
+
+          {!activeUI && (
+            <button onClick={() => openUI('missions')} 
+                    className="absolute top-0 right-0 m-4 mt-safe-top z-40 bg-white p-3 rounded-2xl shadow-lg border-2 border-emerald-100 active:scale-95 transition-transform flex items-center gap-2 group">
+              <div className="w-8 h-8 flex items-center justify-center">
+                 <ImageIcon src="./target.png" size={28} />
+              </div>
+              <div className="text-left hidden group-hover:block transition-all animate-fade-in pr-1">
+                 <div className="text-[10px] font-bold text-emerald-400 uppercase">Daily Mission</div>
+                 <div className="text-xs font-bold text-emerald-800">季節任務</div>
+              </div>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white"></div>
+            </button>
+          )}
           
-          {/* 移動提示 */}
           {!activeUI && !activePlantInstance && !popup && !isMenuExpanded && !isMoving && (
-            <div className="absolute bottom-32 left-1/2 -translate-x-1/2 text-sky-700/60 text-xs font-bold bg-white/40 px-6 py-3 rounded-full backdrop-blur-sm pointer-events-none animate-pulse z-30 border border-white/30">
+            <div className="absolute bottom-32 left-1/2 -translate-x-1/2 text-emerald-700/60 text-xs font-bold bg-white/40 px-6 py-3 rounded-full backdrop-blur-sm pointer-events-none animate-pulse z-30 border border-white/30">
               使用 W A S D 或 方向鍵 移動
             </div>
           )}
 
-          {/* --- 展開式底部選單 --- */}
           {!activeUI && !activePlantInstance && !popup && !isMoving && (
             <div className="absolute bottom-0 inset-x-0 pb-safe-bottom z-50 pointer-events-none flex flex-col items-center justify-end mb-6">
-              <div className={`pointer-events-auto flex items-end justify-center gap-6 mb-6 transition-all duration-300 ease-out ${isMenuExpanded ? 'opacity-100 translate-y-0 visible' : 'opacity-0 translate-y-10 invisible'}`}>
+              <div className={`pointer-events-auto flex items-end justify-center gap-4 mb-6 transition-all duration-300 ease-out ${isMenuExpanded ? 'opacity-100 translate-y-0 visible' : 'opacity-0 translate-y-10 invisible'}`}>
                 <MenuButton imageSrc="./open-book.png" label="圖鑑" onClick={() => openUI('pokedex')} delay={0} />
                 <MenuButton imageSrc="./trophy.png" label="成就" onClick={() => openUI('achievements')} delay={50} />
-                <MenuButton imageSrc="./person.png" label="我的" onClick={() => alert('個人資料功能開發中!')} delay={100} />
+                <MenuButton imageSrc="./gallery.png" label="拼貼" onClick={() => openUI('collage')} delay={100} />
+                <MenuButton imageSrc="./person.png" label="我的" onClick={() => openUI('profile')} delay={150} />
               </div>
 
               <button onClick={() => setIsMenuExpanded(!isMenuExpanded)} 
-                      className={`pointer-events-auto relative w-20 h-20 bg-gradient-to-br from-[#38bdf8] to-[#0284c7] rounded-[2rem] flex items-center justify-center shadow-[0_8px_20px_-5px_rgba(56,189,248,0.4)] border-[5px] border-[#f0f9ff] active:scale-95 transition-all duration-300 group z-50 ${isMenuExpanded ? 'rotate-180 bg-slate-700' : ''}`}>
+                      className={`pointer-events-auto relative w-20 h-20 bg-gradient-to-br from-[#34d399] to-[#059669] rounded-[2rem] flex items-center justify-center shadow-[0_8px_20px_-5px_rgba(16,185,129,0.4)] border-[5px] border-[#ecfdf5] active:scale-95 transition-all duration-300 group z-50 ${isMenuExpanded ? 'rotate-180 bg-slate-700' : ''}`}>
                  <ImageIcon src={isMenuExpanded ? "./x-mark.png" : "./plant.png"} size={isMenuExpanded ? 32 : 42} className={`transition-all duration-300 ${isMenuExpanded ? 'invert brightness-200' : 'drop-shadow-sm'}`} />
               </button>
             </div>
           )}
 
-          {/* --- 彈出視窗層 --- */}
           <BottomSheet isOpen={activeUI === 'pokedex'} onClose={() => setActiveUI(null)} title="植物圖鑑" iconSrc="./open-book.png">
             <PokedexView discoveredIds={discoveredPlantIds} />
           </BottomSheet>
@@ -476,26 +625,45 @@
           <BottomSheet isOpen={activeUI === 'achievements'} onClose={() => setActiveUI(null)} title="成就列表" iconSrc="./trophy.png">
             <AchievementsView />
           </BottomSheet>
+          
+          <BottomSheet isOpen={activeUI === 'collage'} onClose={() => setActiveUI(null)} title="照片拼貼" iconSrc="./gallery.png">
+            <CollageView />
+          </BottomSheet>
+
+          <BottomSheet isOpen={activeUI === 'missions'} onClose={() => setActiveUI(null)} title="季節任務" iconSrc="./target.png">
+            <MissionView />
+          </BottomSheet>
+
+          <BottomSheet isOpen={activeUI === 'status'} onClose={() => setActiveUI(null)} title="目前狀態" iconSrc="./trophy.png">
+            <StatusView />
+          </BottomSheet>
+          
+          <BottomSheet isOpen={activeUI === 'profile'} onClose={() => setActiveUI(null)} title="我的好友" iconSrc="./person.png">
+            <ProfileView />
+          </BottomSheet>
 
           {activePlantInstance && (
             <CaptureUI plant={activePlantInstance} onClose={()=>setActivePlantInstance(null)} onFinish={handlePlantDiscovery} />
           )}
           
           {popup && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-sky-900/20 backdrop-blur-[3px]" onClick={()=>setPopup(null)}>
-              <div className="bg-[#e0f2fe] p-8 rounded-[2.5rem] max-w-sm shadow-2xl animate-bounce-in border-4 border-white relative" onClick={e=>e.stopPropagation()}>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-emerald-900/20 backdrop-blur-[3px]" onClick={()=>setPopup(null)}>
+              <div className="bg-[#f0fdf4] p-8 rounded-[2.5rem] max-w-sm shadow-2xl animate-bounce-in border-4 border-white relative" onClick={e=>e.stopPropagation()}>
                 <button className="absolute top-4 right-4 p-2 bg-black/10 rounded-full hover:bg-black/20 transition-colors active:scale-95" onClick={()=>setPopup(null)}>
                   <ImageIcon src="./x-mark.png" size={20} />
                 </button>
-                <div className="w-28 h-28 bg-white rounded-3xl flex items-center justify-center mb-6 mx-auto shadow-sm border-2 border-sky-100 p-4">
-                   {popup.imageSrc ? (
+                <div className="w-28 h-28 bg-white rounded-3xl flex items-center justify-center mb-6 mx-auto shadow-sm border-2 border-emerald-100 p-4">
+                   {(popup.id === '1' || popup.id === 'chapel') && popup.imageSrc ? (
                     <img src={popup.imageSrc} alt={popup.name} className="w-full h-full object-contain opacity-90 mix-blend-multiply" />
                   ) : (
-                    <div className="text-sky-500 font-bold">Icon</div>
+                    <Icon component={popup.visualIcon || School} size={48} className="text-emerald-500" />
                   )}
                 </div>
-                <h3 className="text-2xl font-black text-center mb-3 text-sky-900">{popup.name}</h3>
-                <p className="text-slate-600 text-center text-sm leading-relaxed font-medium">{popup.desc}</p>
+                <h3 className="text-2xl font-black text-center mb-3 text-emerald-900">{popup.name}</h3>
+                {/* 🔴 修改：增加 max-h 和 overflow-y-auto 讓長文字可以捲動 */}
+                <div className="max-h-[200px] overflow-y-auto no-scrollbar">
+                  <p className="text-slate-600 text-center text-sm leading-relaxed font-medium px-2 pb-2">{popup.desc}</p>
+                </div>
               </div>
             </div>
           )}
@@ -512,18 +680,18 @@
       };
 
       return (
-        <div className="fixed inset-0 z-50 bg-[#e0f2fe] flex items-center justify-center p-6 fade-in">
+        <div className="fixed inset-0 z-50 bg-[#f0fdf4] flex items-center justify-center p-6 fade-in">
           <div className="bg-white/60 backdrop-blur-md p-8 rounded-[2.5rem] shadow-xl w-full max-w-sm border-2 border-white">
             <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-gradient-to-br from-sky-400 to-sky-600 rounded-3xl mx-auto flex items-center justify-center text-white mb-4 shadow-lg shadow-sky-200">
-                {Sprout ? <Sprout size={40} /> : <span className="text-4xl">🌱</span>}
+              <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-3xl mx-auto flex items-center justify-center text-white mb-4 shadow-lg shadow-emerald-200">
+                <Icon component={Sprout} size={40} />
               </div>
-              <h1 className="text-3xl font-black text-sky-900 tracking-tight">PlantGo!</h1>
+              <h1 className="text-3xl font-black text-emerald-900 tracking-tight">PlantGo!</h1>
             </div>
             <form onSubmit={handleLogin} className="space-y-4">
-              <input className="w-full p-4 bg-white/80 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-sky-400 outline-none" placeholder="學號信箱" value="s1120325@o365st.pu.edu.tw" readOnly />
-              <input type="password" className="w-full p-4 bg-white/80 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-sky-400 outline-none" placeholder="密碼" value="Gary.0924" readOnly />
-              <button disabled={loading} className="w-full py-4 bg-gradient-to-r from-sky-500 to-sky-600 text-white rounded-2xl font-black text-lg shadow-lg shadow-sky-200/50 active:scale-[0.98] transition-all mt-6">
+              <input className="w-full p-4 bg-white/80 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-emerald-400 outline-none" placeholder="學號信箱" value="s1120325@o365st.pu.edu.tw" readOnly />
+              <input type="password" className="w-full p-4 bg-white/80 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-emerald-400 outline-none" placeholder="密碼" value="Gary.0924" readOnly />
+              <button disabled={loading} className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-2xl font-black text-lg shadow-lg shadow-emerald-200/50 active:scale-[0.98] transition-all mt-6">
                 {loading ? (Loader2 ? <Loader2 className="spin mx-auto" /> : '...') : '開始探險'}
               </button>
             </form>
