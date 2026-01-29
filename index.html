@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>PlantGo: Fixed All</title>
+  <title>PlantGo: Library Position Fixed</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -77,19 +77,25 @@
     };
 
     const INITIAL_BUILDINGS = [
+      // 1. 主顧聖母堂
       { 
         id: 'chapel', 
         name: '主顧聖母堂', 
         imageSrc: './church_sketch.png', 
         position: { x: 1200, y: 1100 },
-        desc: '主顧聖母堂位於台中市沙鹿區靜宜大學內，是一座融合信仰與現代設計的天主教聖堂，落成於2019年底。該教堂由四個弧形牆板組成，外觀如竹筍包覆，並從高處俯瞰呈魚的意象，象徵「五餅二魚」的聖經故事。其特色為屋頂的玻璃十字架，光影變化豐富，被視為台中的新地標，也成為熱門的婚紗拍攝點。'
+        desc: '主顧聖母堂位於台中市沙鹿區靜宜大學內，是一座融合信仰與現代設計的天主教聖堂...'
       },
+      // 2. 校門
       { id: '1', name: '校門', imageSrc: './gate.png', position: { x: 2200, y: 2750 }, desc: '靜宜的起點，夢想啟航的地方。' },
+      
+      // 4. 蓋夏圖書館 (🔴 移到人物附近，靜園餐廳左下方)
+      { id: '4', name: '蓋夏圖書館', imageSrc: './library.png', position: { x: 900, y: 1400 }, desc: '知識的寶庫，擁有豐富館藏。' },
+
+      // 其他建築
       { id: '2', name: '任垣樓', imageSrc: './school.png', position: { x: 500, y: 500 }, desc: '人文與社會科學的搖籃。' },
       { id: '3', name: '伯鐸樓', imageSrc: './school.png', position: { x: 500, y: 800 }, desc: '培育專業人才的教學大樓。' },
-      { id: '4', name: '蓋夏圖書館', imageSrc: './library.png', position: { x: 500, y: 1100 }, desc: '知識的寶庫，擁有豐富館藏。' },
-      { id: '5', name: '靜安樓', imageSrc: './school.png', position: { x: 500, y: 1400 }, desc: '行政與教學的綜合空間。' },
-      { id: '6', name: '格倫樓', imageSrc: './school.png', position: { x: 600, y: 1800 }, desc: '國際會議與學術交流中心。' },
+      { id: '5', name: '靜安樓', imageSrc: './school.png', position: { x: 500, y: 1600 }, desc: '行政與教學的綜合空間。' }, // 往下移一點，避開圖書館
+      { id: '6', name: '格倫樓', imageSrc: './school.png', position: { x: 600, y: 1900 }, desc: '國際會議與學術交流中心。' },
       { id: '7', name: '主顧樓', imageSrc: './school.png', position: { x: 1600, y: 500 }, desc: '學校的核心行政中心。' },
       { id: '8', name: '方濟樓', imageSrc: './school.png', position: { x: 1100, y: 400 }, desc: '寧靜優雅的學習環境。' },
       { id: '9', name: '修院', imageSrc: './school.png', position: { x: 950, y: 1100 }, desc: '莊嚴肅穆的修道場所。' },
@@ -401,7 +407,6 @@
       );
     };
 
-    // 🔴 這裡補回了 MenuButton 元件 🔴
     const MenuButton = ({ imageSrc, label, onClick, delay }) => (
       <button onClick={onClick} 
               className="flex flex-col items-center gap-2 group transition-all duration-300"
@@ -413,7 +418,6 @@
       </button>
     );
 
-    // 🔴 這裡也確保 LoginUI 是存在的 🔴
     const LoginUI = ({ onLoginSuccess }) => {
       const [loading, setLoading] = useState(false);
       const handleLogin = (e) => {
@@ -445,7 +449,7 @@
 
     const App = () => {
       const [page, setPage] = useState('login'); 
-      const [pos, setPos] = useState({ x: 2200, y: 2800 }); 
+      const [pos, setPos] = useState({ x: 1200, y: 1100 }); 
       const [gender, setGender] = useState('boy');
       const [activePlantInstance, setActivePlantInstance] = useState(null);
       const [popup, setPopup] = useState(null);
@@ -541,7 +545,7 @@
                  willChange: 'transform'
                }}>
             
-            {/* 地圖背景層：只顯示 map.png */}
+            {/* 地圖背景層 */}
             <BackgroundLayer />
             
             {INITIAL_BUILDINGS.map(b => (
@@ -550,7 +554,7 @@
                    style={{ left: b.position.x, top: b.position.y, transform: 'translate(-50%, -50%)' }}>
                 <div className="w-24 h-24 bg-white rounded-3xl shadow-lg border-4 border-[#d1fae5] flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105 bg-white/80 backdrop-blur-sm">
                   {/* 如果是校門或教堂用圖片，其他用圖標 */}
-                  {(b.id === '1' || b.id === 'chapel' || b.imageSrc) && b.imageSrc ? (
+                  {(b.id === '1' || b.id === 'chapel' || b.id === '4' || b.imageSrc) && b.imageSrc ? (
                     <img src={b.imageSrc} alt={b.name} className="w-full h-full object-contain p-2 opacity-90 mix-blend-multiply" />
                   ) : (
                     <Icon component={b.visualIcon || School} size={32} className="text-emerald-500" />
@@ -679,7 +683,7 @@
                   <ImageIcon src="./x-mark.png" size={20} />
                 </button>
                 <div className="w-28 h-28 bg-white rounded-3xl flex items-center justify-center mb-6 mx-auto shadow-sm border-2 border-emerald-100 p-4">
-                   {(popup.id === '1' || popup.id === 'chapel' || popup.imageSrc) && popup.imageSrc ? (
+                   {(popup.id === '1' || popup.id === 'chapel' || popup.id === '4' || popup.imageSrc) && popup.imageSrc ? (
                     <img src={popup.imageSrc} alt={popup.name} className="w-full h-full object-contain opacity-90 mix-blend-multiply" />
                   ) : (
                     <Icon component={popup.visualIcon || School} size={48} className="text-emerald-500" />
