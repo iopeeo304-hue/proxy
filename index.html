@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>PlantGo: Library Position Fixed</title>
+  <title>PlantGo: Chapel Update</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -23,7 +23,7 @@
   <script src="https://unpkg.com/lucide-react@0.292.0/dist/umd/lucide-react.min.js"></script>
 
   <style>
-    body { margin: 0; overflow: hidden; background-color: #f8f5e6; touch-action: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { margin: 0; overflow: hidden; background-color: #fcfbf7; touch-action: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     
     .fade-in { animation: fadeIn 0.3s ease-out; }
     .slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -48,21 +48,25 @@
   <script type="text/babel">
     const { useState, useEffect, useRef, useMemo } = React;
     
+    // --- 安全載入圖標 ---
     const Icons = window.lucideReact || {};
     const { 
       Sprout, Camera, Compass, LibraryBig, School, 
       Loader2, Check, HelpCircle, BookOpen, Trophy, User, 
       Image: ImageIconLucide, Plus, Calendar, Clock, Footprints,
-      Utensils, Home, Dumbbell, Building2
+      Utensils, Home, Dumbbell, Building2, Church // 新增 Church 圖標
     } = Icons;
 
+    // --- 圖片組件 ---
     const ImageIcon = ({ src, size = 24, className = "", alt = "icon" }) => (
       <img src={src} alt={alt} style={{ width: size, height: size }} className={`object-contain ${className}`} />
     );
 
+    // --- 設定 ---
     const MAP_SIZE = 3000;
     const MOVE_SPEED = 25;
 
+    // --- 背景組件：只顯示真實地圖 ---
     const BackgroundLayer = () => {
       return (
         <div className="absolute inset-0 pointer-events-none z-0">
@@ -76,38 +80,34 @@
       );
     };
 
+    // --- 建築物資料 ---
+    // 🔴 修改：手動加入了「主顧聖母堂」並更新了詳細介紹
     const INITIAL_BUILDINGS = [
-      // 1. 主顧聖母堂
+      // 特別新增：主顧聖母堂
       { 
         id: 'chapel', 
         name: '主顧聖母堂', 
         imageSrc: './church_sketch.png', 
-        position: { x: 1200, y: 1100 },
-        desc: '主顧聖母堂位於台中市沙鹿區靜宜大學內，是一座融合信仰與現代設計的天主教聖堂...'
+        position: { x: 2000, y: 2400 },
+        desc: '主顧聖母堂是一座融合信仰與現代設計的天主教聖堂，落成於2019年底。該教堂由四個弧形牆板組成，外觀如竹筍包覆，並從高處俯瞰呈魚的意象，象徵「五餅二魚」的聖經故事。 為紀念「主顧修女會」在亞洲服務100週年，同時傳承創辦人「蓋夏姆姆」的精神。'
       },
-      // 2. 校門
-      { id: '1', name: '校門', imageSrc: './gate.png', position: { x: 2200, y: 2750 }, desc: '靜宜的起點，夢想啟航的地方。' },
-      
-      // 4. 蓋夏圖書館 (🔴 移到人物附近，靜園餐廳左下方)
-      { id: '4', name: '蓋夏圖書館', imageSrc: './library.png', position: { x: 900, y: 1400 }, desc: '知識的寶庫，擁有豐富館藏。' },
-
-      // 其他建築
-      { id: '2', name: '任垣樓', imageSrc: './school.png', position: { x: 500, y: 500 }, desc: '人文與社會科學的搖籃。' },
-      { id: '3', name: '伯鐸樓', imageSrc: './school.png', position: { x: 500, y: 800 }, desc: '培育專業人才的教學大樓。' },
-      { id: '5', name: '靜安樓', imageSrc: './school.png', position: { x: 500, y: 1600 }, desc: '行政與教學的綜合空間。' }, // 往下移一點，避開圖書館
-      { id: '6', name: '格倫樓', imageSrc: './school.png', position: { x: 600, y: 1900 }, desc: '國際會議與學術交流中心。' },
-      { id: '7', name: '主顧樓', imageSrc: './school.png', position: { x: 1600, y: 500 }, desc: '學校的核心行政中心。' },
-      { id: '8', name: '方濟樓', imageSrc: './school.png', position: { x: 1100, y: 400 }, desc: '寧靜優雅的學習環境。' },
-      { id: '9', name: '修院', imageSrc: './school.png', position: { x: 950, y: 1100 }, desc: '莊嚴肅穆的修道場所。' },
-      { id: '10', name: '思源樓', imageSrc: './school.png', position: { x: 1600, y: 1000 }, desc: '飲水思源，科學實驗基地。' },
-      { id: '11', name: '文興樓', imageSrc: './school.png', position: { x: 1600, y: 1300 }, desc: '外語與文學的殿堂。' },
-      { id: '12', name: '靜園餐廳', imageSrc: './school.png', position: { x: 1300, y: 1100 }, desc: '美味與聚餐的好去處。' },
-      { id: '13', name: '希嘉學苑', imageSrc: './school.png', position: { x: 1100, y: 1600 }, desc: '溫馨舒適的學生宿舍。' },
-      { id: '14', name: '宜園餐廳', imageSrc: './school.png', position: { x: 1500, y: 1800 }, desc: '提供多樣化的餐飲選擇。' },
-      { id: '15', name: '至善樓', imageSrc: './school.png', position: { x: 2300, y: 1300 }, desc: '學生活動中心，充滿活力。' },
-      { id: '16', name: '思高學苑', imageSrc: './school.png', position: { x: 800, y: 1200 }, desc: '環境清幽的學生宿舍。' },
-      { id: '17', name: '體育館', imageSrc: './school.png', position: { x: 500, y: 2200 }, desc: '鍛鍊體魄的室內場館。' },
-      { id: '20', name: '綜合球場', imageSrc: './school.png', position: { x: 1600, y: 2400 }, desc: '揮灑汗水的戶外運動場。' },
+      { name: '校門', visualIcon: Compass, position: { x: 2300, y: 2750 }, desc: '靜宜的起點，夢想啟航的地方。' },
+      {  name: '任垣樓', visualIcon: School, position: { x: 1800, y: 1900 }, desc: '人文與社會科學的搖籃。' },
+      { name: '伯鐸樓', visualIcon: School, position: { x: 2150, y: 1650 }, desc: '培育專業人才的教學大樓。' },
+      { name: '蓋夏圖書館', visualIcon: LibraryBig, position: { x: 1900, y: 1400 }, desc: '知識的寶庫，擁有豐富館藏。' },
+      { name: '靜安樓', visualIcon: Building2, position: { x: 2200, y: 1100 }, desc: '行政與教學的綜合空間。' },
+      { name: '格倫樓', visualIcon: Building2, position: { x: 2050, y: 800 }, desc: '國際會議與學術交流中心。' },
+      { name: '主顧樓', visualIcon: School, position: { x: 1650, y: 650 }, desc: '學校的核心行政中心。' },
+      { name: '方濟樓', visualIcon: School, position: { x: 1200, y: 650 }, desc: '寧靜優雅的學習環境。' },
+      { name: '修院', visualIcon: Home, position: { x: 1100, y: 950 }, desc: '莊嚴肅穆的修道場所。' },
+      { name: '思源樓', visualIcon: School, position: { x: 1600, y: 1050 }, desc: '飲水思源，科學實驗基地。' },
+      { name: '文興樓', visualIcon: School, position: { x: 2600, y: 400 }, desc: '外語與文學的殿堂。' },
+      { name: '靜園餐廳', visualIcon: Utensils, position: { x: 1300, y: 1250 }, desc: '美味與聚餐的好去處。' },
+      { name: '希嘉學苑', visualIcon: Home, position: { x: 1100, y: 1650 }, desc: '溫馨舒適的學生宿舍。' },
+      { name: '宜園餐廳', visualIcon: Utensils, position: { x: 1200, y: 2000 }, desc: '提供多樣化的餐飲選擇。' },
+      { name: '至善樓', visualIcon: School, position: { x: 2350, y : 1250 }, desc:'學生活動中心，充滿活力。' },
+      { name:'思高學苑', visualIcon : Home , position :{x :700 ,y :1300},desc :'環境清幽的學生宿舍。'},
+      { name:'若望保祿二世體育館', visualIcon : Dumbbell , position :{x :600 ,y :1600},desc :'鍛鍊體魄的室內場館。'},
     ];
 
     const PLANT_DATABASE = [
@@ -418,38 +418,9 @@
       </button>
     );
 
-    const LoginUI = ({ onLoginSuccess }) => {
-      const [loading, setLoading] = useState(false);
-      const handleLogin = (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setTimeout(() => { onLoginSuccess(); setLoading(false); }, 800);
-      };
-
-      return (
-        <div className="fixed inset-0 z-50 bg-[#f0fdf4] flex items-center justify-center p-6 fade-in">
-          <div className="bg-white/60 backdrop-blur-md p-8 rounded-[2.5rem] shadow-xl w-full max-w-sm border-2 border-white">
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-3xl mx-auto flex items-center justify-center text-white mb-4 shadow-lg shadow-emerald-200">
-                <Icon component={Sprout} size={40} />
-              </div>
-              <h1 className="text-3xl font-black text-emerald-900 tracking-tight">PlantGo!</h1>
-            </div>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <input className="w-full p-4 bg-white/80 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-emerald-400 outline-none" placeholder="學號信箱" value="s1120325@o365st.pu.edu.tw" readOnly />
-              <input type="password" className="w-full p-4 bg-white/80 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-emerald-400 outline-none" placeholder="密碼" value="Gary.0924" readOnly />
-              <button disabled={loading} className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-2xl font-black text-lg shadow-lg shadow-emerald-200/50 active:scale-[0.98] transition-all mt-6">
-                {loading ? (Loader2 ? <Loader2 className="spin mx-auto" /> : '...') : '開始探險'}
-              </button>
-            </form>
-          </div>
-        </div>
-      );
-    };
-
     const App = () => {
       const [page, setPage] = useState('login'); 
-      const [pos, setPos] = useState({ x: 1200, y: 1100 }); 
+      const [pos, setPos] = useState({ x: 2300, y: 2800 }); 
       const [gender, setGender] = useState('boy');
       const [activePlantInstance, setActivePlantInstance] = useState(null);
       const [popup, setPopup] = useState(null);
@@ -545,7 +516,6 @@
                  willChange: 'transform'
                }}>
             
-            {/* 地圖背景層 */}
             <BackgroundLayer />
             
             {INITIAL_BUILDINGS.map(b => (
@@ -554,7 +524,7 @@
                    style={{ left: b.position.x, top: b.position.y, transform: 'translate(-50%, -50%)' }}>
                 <div className="w-24 h-24 bg-white rounded-3xl shadow-lg border-4 border-[#d1fae5] flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105 bg-white/80 backdrop-blur-sm">
                   {/* 如果是校門或教堂用圖片，其他用圖標 */}
-                  {(b.id === '1' || b.id === 'chapel' || b.id === '4' || b.imageSrc) && b.imageSrc ? (
+                  {(b.id === '1' || b.id === 'chapel') && b.imageSrc ? (
                     <img src={b.imageSrc} alt={b.name} className="w-full h-full object-contain p-2 opacity-90 mix-blend-multiply" />
                   ) : (
                     <Icon component={b.visualIcon || School} size={32} className="text-emerald-500" />
@@ -683,22 +653,49 @@
                   <ImageIcon src="./x-mark.png" size={20} />
                 </button>
                 <div className="w-28 h-28 bg-white rounded-3xl flex items-center justify-center mb-6 mx-auto shadow-sm border-2 border-emerald-100 p-4">
-                   {(popup.id === '1' || popup.id === 'chapel' || popup.id === '4' || popup.imageSrc) && popup.imageSrc ? (
+                   {(popup.id === '1' || popup.id === 'chapel') && popup.imageSrc ? (
                     <img src={popup.imageSrc} alt={popup.name} className="w-full h-full object-contain opacity-90 mix-blend-multiply" />
                   ) : (
                     <Icon component={popup.visualIcon || School} size={48} className="text-emerald-500" />
                   )}
                 </div>
-                <div className="text-center mb-1">
-                  {/^\d+$/.test(popup.id) && <span className="bg-emerald-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">#{popup.id}</span>}
-                </div>
                 <h3 className="text-2xl font-black text-center mb-3 text-emerald-900">{popup.name}</h3>
+                {/* 🔴 修改：增加 max-h 和 overflow-y-auto 讓長文字可以捲動 */}
                 <div className="max-h-[200px] overflow-y-auto no-scrollbar">
                   <p className="text-slate-600 text-center text-sm leading-relaxed font-medium px-2 pb-2">{popup.desc}</p>
                 </div>
               </div>
             </div>
           )}
+        </div>
+      );
+    };
+
+    const LoginUI = ({ onLoginSuccess }) => {
+      const [loading, setLoading] = useState(false);
+      const handleLogin = (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setTimeout(() => { onLoginSuccess(); setLoading(false); }, 800);
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 bg-[#f0fdf4] flex items-center justify-center p-6 fade-in">
+          <div className="bg-white/60 backdrop-blur-md p-8 rounded-[2.5rem] shadow-xl w-full max-w-sm border-2 border-white">
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-3xl mx-auto flex items-center justify-center text-white mb-4 shadow-lg shadow-emerald-200">
+                <Icon component={Sprout} size={40} />
+              </div>
+              <h1 className="text-3xl font-black text-emerald-900 tracking-tight">PlantGo!</h1>
+            </div>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <input className="w-full p-4 bg-white/80 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-emerald-400 outline-none" placeholder="學號信箱" value="s1120325@o365st.pu.edu.tw" readOnly />
+              <input type="password" className="w-full p-4 bg-white/80 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-emerald-400 outline-none" placeholder="密碼" value="Gary.0924" readOnly />
+              <button disabled={loading} className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-2xl font-black text-lg shadow-lg shadow-emerald-200/50 active:scale-[0.98] transition-all mt-6">
+                {loading ? (Loader2 ? <Loader2 className="spin mx-auto" /> : '...') : '開始探險'}
+              </button>
+            </form>
+          </div>
         </div>
       );
     };
