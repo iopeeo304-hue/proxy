@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>PlantGo: All Images Mode</title>
+  <title>PlantGo: Fixed Login</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -78,20 +78,19 @@
       );
     };
 
-    // --- 建築物資料 (全部改為使用圖片) ---
-    // 注意：沒有特定圖片的建築物，我暫時都設為 school.png，請自行替換檔名
+    // --- 建築物資料 ---
     const INITIAL_BUILDINGS = [
       { 
         id: 'chapel', 
         name: '主顧聖母堂', 
-        imageSrc: './church_sketch.png', // 已確認
+        imageSrc: './church_sketch.png', 
         position: { x: 1550, y: 700 },
-        desc: '主顧聖母堂位於台中市沙鹿區靜宜大學內，是一座融合信仰與現代設計的天主教聖堂...'
+        desc: '主顧聖母堂位於台中市沙鹿區靜宜大學內，是一座融合信仰與現代設計的天主教聖堂，落成於2019年底。該教堂由四個弧形牆板組成，外觀如竹筍包覆，並從高處俯瞰呈魚的意象，象徵「五餅二魚」的聖經故事。其特色為屋頂的玻璃十字架，光影變化豐富，被視為台中的新地標，也成為熱門的婚紗拍攝點。'
       },
-      { id: '1', name: '校門', imageSrc: './gate.png', position: { x: 2200, y: 2750 }, desc: '靜宜的起點，夢想啟航的地方。' }, // 已確認
+      { id: '1', name: '校門', imageSrc: './gate.png', position: { x: 2200, y: 2750 }, desc: '靜宜的起點，夢想啟航的地方。' },
       { id: '2', name: '任垣樓', imageSrc: './school.png', position: { x: 500, y: 500 }, desc: '人文與社會科學的搖籃。' },
       { id: '3', name: '伯鐸樓', imageSrc: './school.png', position: { x: 500, y: 800 }, desc: '培育專業人才的教學大樓。' },
-      { id: '4', name: '蓋夏圖書館', imageSrc: './library.png', position: { x: 500, y: 1100 }, desc: '知識的寶庫，擁有豐富館藏。' }, // 已確認
+      { id: '4', name: '蓋夏圖書館', imageSrc: './library.png', position: { x: 500, y: 1100 }, desc: '知識的寶庫，擁有豐富館藏。' },
       { id: '5', name: '靜安樓', imageSrc: './school.png', position: { x: 500, y: 1400 }, desc: '行政與教學的綜合空間。' },
       { id: '6', name: '格倫樓', imageSrc: './school.png', position: { x: 600, y: 1800 }, desc: '國際會議與學術交流中心。' },
       { id: '7', name: '主顧樓', imageSrc: './school.png', position: { x: 1600, y: 500 }, desc: '學校的核心行政中心。' },
@@ -145,7 +144,6 @@
         { id: 3, name: "王大錘", avatar: "🧔‍♂️" },
     ];
 
-    // Fallback Icon
     const FallbackIcon = ({ name }) => <span className="text-xs font-bold opacity-30">○</span>;
     const Icon = ({ component: Comp, ...props }) => {
       if (!Comp) return <FallbackIcon name="unknown" />;
@@ -417,9 +415,39 @@
       </button>
     );
 
+    // --- 🔴 這裡是之前遺失的 LoginUI 組件，現在補回來了！ 🔴 ---
+    const LoginUI = ({ onLoginSuccess }) => {
+      const [loading, setLoading] = useState(false);
+      const handleLogin = (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setTimeout(() => { onLoginSuccess(); setLoading(false); }, 800);
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 bg-[#f0fdf4] flex items-center justify-center p-6 fade-in">
+          <div className="bg-white/60 backdrop-blur-md p-8 rounded-[2.5rem] shadow-xl w-full max-w-sm border-2 border-white">
+            <div className="text-center mb-8">
+              <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-3xl mx-auto flex items-center justify-center text-white mb-4 shadow-lg shadow-emerald-200">
+                <Icon component={Sprout} size={40} />
+              </div>
+              <h1 className="text-3xl font-black text-emerald-900 tracking-tight">PlantGo!</h1>
+            </div>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <input className="w-full p-4 bg-white/80 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-emerald-400 outline-none" placeholder="學號信箱" value="s1120325@o365st.pu.edu.tw" readOnly />
+              <input type="password" className="w-full p-4 bg-white/80 rounded-2xl font-bold text-slate-700 border-2 border-transparent focus:border-emerald-400 outline-none" placeholder="密碼" value="Gary.0924" readOnly />
+              <button disabled={loading} className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-2xl font-black text-lg shadow-lg shadow-emerald-200/50 active:scale-[0.98] transition-all mt-6">
+                {loading ? (Loader2 ? <Loader2 className="spin mx-auto" /> : '...') : '開始探險'}
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    };
+
     const App = () => {
       const [page, setPage] = useState('login'); 
-      const [pos, setPos] = useState({ x: 2200, y: 2800 }); // 初始位置設在右下角校門
+      const [pos, setPos] = useState({ x: 2200, y: 2800 }); 
       const [gender, setGender] = useState('boy');
       const [activePlantInstance, setActivePlantInstance] = useState(null);
       const [popup, setPopup] = useState(null);
@@ -515,7 +543,7 @@
                  willChange: 'transform'
                }}>
             
-            {/* 地圖背景層：只顯示 map.png */}
+            {/* 地圖背景層 */}
             <BackgroundLayer />
             
             {INITIAL_BUILDINGS.map(b => (
