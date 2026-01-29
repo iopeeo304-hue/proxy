@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>PlantGo: Position Fix</title>
+  <title>PlantGo: Fixed All</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -76,20 +76,15 @@
       );
     };
 
-    // --- 建築物資料 (座標已修正) ---
     const INITIAL_BUILDINGS = [
-      // 1. 主顧聖母堂 (移到人物位置，靜園餐廳左側)
       { 
         id: 'chapel', 
         name: '主顧聖母堂', 
         imageSrc: './church_sketch.png', 
-        position: { x: 1200, y: 1100 }, // 修正座標
-        desc: '主顧聖母堂位於台中市沙鹿區靜宜大學內，是一座融合信仰與現代設計的天主教聖堂...'
+        position: { x: 1200, y: 1100 },
+        desc: '主顧聖母堂位於台中市沙鹿區靜宜大學內，是一座融合信仰與現代設計的天主教聖堂，落成於2019年底。該教堂由四個弧形牆板組成，外觀如竹筍包覆，並從高處俯瞰呈魚的意象，象徵「五餅二魚」的聖經故事。其特色為屋頂的玻璃十字架，光影變化豐富，被視為台中的新地標，也成為熱門的婚紗拍攝點。'
       },
-      // 2. 校門
       { id: '1', name: '校門', imageSrc: './gate.png', position: { x: 2200, y: 2750 }, desc: '靜宜的起點，夢想啟航的地方。' },
-      
-      // 3. 其他建築 (修院已調整)
       { id: '2', name: '任垣樓', imageSrc: './school.png', position: { x: 500, y: 500 }, desc: '人文與社會科學的搖籃。' },
       { id: '3', name: '伯鐸樓', imageSrc: './school.png', position: { x: 500, y: 800 }, desc: '培育專業人才的教學大樓。' },
       { id: '4', name: '蓋夏圖書館', imageSrc: './library.png', position: { x: 500, y: 1100 }, desc: '知識的寶庫，擁有豐富館藏。' },
@@ -97,9 +92,7 @@
       { id: '6', name: '格倫樓', imageSrc: './school.png', position: { x: 600, y: 1800 }, desc: '國際會議與學術交流中心。' },
       { id: '7', name: '主顧樓', imageSrc: './school.png', position: { x: 1600, y: 500 }, desc: '學校的核心行政中心。' },
       { id: '8', name: '方濟樓', imageSrc: './school.png', position: { x: 1100, y: 400 }, desc: '寧靜優雅的學習環境。' },
-      // 9. 修院 (移到聖母堂左側)
-      { id: '9', name: '修院', imageSrc: './school.png', position: { x: 950, y: 1100 }, desc: '莊嚴肅穆的修道場所。' }, // 修正座標
-      
+      { id: '9', name: '修院', imageSrc: './school.png', position: { x: 950, y: 1100 }, desc: '莊嚴肅穆的修道場所。' },
       { id: '10', name: '思源樓', imageSrc: './school.png', position: { x: 1600, y: 1000 }, desc: '飲水思源，科學實驗基地。' },
       { id: '11', name: '文興樓', imageSrc: './school.png', position: { x: 1600, y: 1300 }, desc: '外語與文學的殿堂。' },
       { id: '12', name: '靜園餐廳', imageSrc: './school.png', position: { x: 1300, y: 1100 }, desc: '美味與聚餐的好去處。' },
@@ -408,6 +401,19 @@
       );
     };
 
+    // 🔴 這裡補回了 MenuButton 元件 🔴
+    const MenuButton = ({ imageSrc, label, onClick, delay }) => (
+      <button onClick={onClick} 
+              className="flex flex-col items-center gap-2 group transition-all duration-300"
+              style={{ transitionDelay: `${delay}ms` }}>
+        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-md border-2 border-emerald-50 group-active:scale-95 transition-transform">
+          <ImageIcon src={imageSrc} size={32} />
+        </div>
+        <span className="text-xs font-bold text-emerald-800 bg-white/80 px-2 py-0.5 rounded-full backdrop-blur-sm shadow-sm">{label}</span>
+      </button>
+    );
+
+    // 🔴 這裡也確保 LoginUI 是存在的 🔴
     const LoginUI = ({ onLoginSuccess }) => {
       const [loading, setLoading] = useState(false);
       const handleLogin = (e) => {
@@ -550,11 +556,10 @@
                     <Icon component={b.visualIcon || School} size={32} className="text-emerald-500" />
                   )}
                 </div>
-                <div className="text-center mb-1">
-                  {/^\d+$/.test(b.id) && <span className="bg-emerald-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">#{b.id}</span>}
-                </div>
                 {/* 顯示建築名稱 */}
-                <div className="mt-1 bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-emerald-800 shadow-sm whitespace-nowrap border border-emerald-100">
+                <div className="mt-3 bg-white/90 px-3 py-1 rounded-full text-xs font-bold text-emerald-800 shadow-sm whitespace-nowrap border border-emerald-100 flex items-center gap-1">
+                   {/* 如果有數字 ID 顯示數字，沒有則不顯示 */}
+                   {/^\d+$/.test(b.id) && <span className="bg-emerald-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]">{b.id}</span>}
                    {b.name}
                 </div>
               </div>
